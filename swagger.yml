@@ -1,0 +1,12 @@
+consumes:
+- application/json
+info:
+  description: Implementing a User API with a Cassandra backend
+  title: A User API with Cassandra backend
+  version: 1.0.0
+paths: {}
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"
