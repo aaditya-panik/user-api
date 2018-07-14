@@ -47,7 +47,6 @@ paths:
   /user/{id}:
     parameters:
       - type: string
-        format: uuid
         name: id
         in: path
         required: true
@@ -94,17 +93,16 @@ definitions:
     properties:
       id:
         type: string
-        format: uuid
         readOnly: true
       username:
         type: string
         minLength: 6
       first_name:
         type: string
-        minLength: 8
+        minLength: 3
       last_name:
         type: string
-        minLength: 8
+        minLength: 3
   error:
     type: object
     required:
