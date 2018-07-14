@@ -176,7 +176,7 @@ func init() {
       "properties": {
         "first_name": {
           "type": "string",
-          "minLength": 8
+          "minLength": 3
         },
         "id": {
           "type": "string",
@@ -184,7 +184,7 @@ func init() {
         },
         "last_name": {
           "type": "string",
-          "minLength": 8
+          "minLength": 3
         },
         "username": {
           "type": "string",
@@ -353,7 +353,7 @@ func init() {
       "properties": {
         "first_name": {
           "type": "string",
-          "minLength": 8
+          "minLength": 3
         },
         "id": {
           "type": "string",
@@ -361,7 +361,7 @@ func init() {
         },
         "last_name": {
           "type": "string",
-          "minLength": 8
+          "minLength": 3
         },
         "username": {
           "type": "string",

@@ -41,6 +41,19 @@ func addUser(user *models.User) error {
 	return nil
 }
 
+func deleteUser(id string) error {
+	userLock.Lock()
+	defer userLock.Unlock()
+
+	_, exists := userMap[id]
+	if !exists {
+		return errors.NotFound("User not found with ID %s", id)
+	}
+
+	delete(userMap, id)
+	return nil
+}
+
 func allItems() []*models.User {
 	returnList := make([]*models.User, len(userMap))
 	for _, value := range userMap{
@@ -91,7 +104,10 @@ func configureAPI(api *operations.UserAPI) http.Handler {
 		return users.NewCreateOneCreated().WithPayload(params.Body)
 	})
 	api.UsersDeleteOneHandler = users.DeleteOneHandlerFunc(func(params users.DeleteOneParams) middleware.Responder {
-		return middleware.NotImplemented("operation users.DeleteOne has not yet been implemented")
+		if err := deleteUser(params.ID); err != nil {
+			return users.NewDeleteOneDefault(404).WithPayload(&models.Error{StatusCode: 404, Status: swag.String(err.Error())})
+		}
+		return users.NewDeleteOneNoContent()
 	})
 	api.UsersGetAllHandler = users.GetAllHandlerFunc(func(params users.GetAllParams) middleware.Responder {
 		allUsers := allItems()
