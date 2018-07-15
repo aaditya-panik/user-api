@@ -67,7 +67,7 @@ func addUserHelper(user *models.User) error {
 	}
 	newUserId := newUserId()
 	user.ID = newUserId
-	if !userExistsByUsername(*user.Username) {
+	if !userExistsByUsername(user.Username) {
 		saveUser(user)
 	}
 	return nil
@@ -78,20 +78,20 @@ func deleteUserHelper(id string) error {
 }
 
 func getAllUsersHelper() (result []*models.User) {
-	// TODO
-	//result = make([]*models.User, 0)
-	//m := map[string]interface{}{}
-	//query := `SELECT id,username,first_name,last_name FROM users`
-	//iter := Session.Query(query).Iter()
-	//for iter.MapScan(m) {
-	//	result = append(result, &models.User{
-	//		ID: m["id"].(string),
-	//		Username: *m["username"].(string),
-	//		FirstName: m["first_name"].(string)
-	//		LastName: m["last_name"].(string)
-	//	})
-	//}
-	//return
+	result = make([]*models.User, 0)
+	m := map[string]interface{}{}
+	query := `SELECT id,username,first_name,last_name FROM users`
+	iter := Session.Query(query).Iter()
+	for iter.MapScan(m) {
+		result = append(result, &models.User{
+			ID: m["id"].(string),
+			Username: m["username"].(string),
+			FirstName: m["first_name"].(string),
+			LastName: m["last_name"].(string),
+		})
+		m = map[string]interface{}{}
+	}
+	return
 }
 func configureFlags(api *operations.UserAPI) {
 	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }

@@ -20,7 +20,7 @@ type User struct {
 	// first name
 	// Required: true
 	// Min Length: 3
-	FirstName *string `json:"first_name"`
+	FirstName string `json:"first_name"`
 
 	// id
 	// Read Only: true
@@ -29,12 +29,12 @@ type User struct {
 	// last name
 	// Required: true
 	// Min Length: 3
-	LastName *string `json:"last_name"`
+	LastName string `json:"last_name"`
 
 	// username
 	// Required: true
 	// Min Length: 6
-	Username *string `json:"username"`
+	Username string `json:"username"`
 }
 
 // Validate validates this user
@@ -65,7 +65,7 @@ func (m *User) validateFirstName(formats strfmt.Registry) error {
 		return err
 	}
 
-	if err := validate.MinLength("first_name", "body", string(*m.FirstName), 3); err != nil {
+	if err := validate.MinLength("first_name", "body", string(m.FirstName), 3); err != nil {
 		return err
 	}
 
@@ -78,7 +78,7 @@ func (m *User) validateLastName(formats strfmt.Registry) error {
 		return err
 	}
 
-	if err := validate.MinLength("last_name", "body", string(*m.LastName), 3); err != nil {
+	if err := validate.MinLength("last_name", "body", string(m.LastName), 3); err != nil {
 		return err
 	}
 
@@ -91,7 +91,7 @@ func (m *User) validateUsername(formats strfmt.Registry) error {
 		return err
 	}
 
-	if err := validate.MinLength("username", "body", string(*m.Username), 6); err != nil {
+	if err := validate.MinLength("username", "body", string(m.Username), 6); err != nil {
 		return err
 	}
 
