@@ -12,12 +12,87 @@ import (
 	"userapi/restapi/operations"
 	"userapi/restapi/operations/users"
 	"userapi/restapi/cassandra"
+	"userapi/models"
+	"github.com/rs/xid"
+	"github.com/go-openapi/swag"
+	"log"
 )
 
 //go:generate swagger generate server --target .. --name user --spec ../swagger.yml
 
 var Session = cassandra.Session
 
+// Utility Functions
+
+func newUserId() string {
+	return xid.New().String()
+}
+
+func userExistsById(id string) bool {
+	query := `SELECT FROM users WHERE id = ?`
+	return Session.Query(query, id).Iter().NumRows() >= 1
+}
+
+func userExistsByUsername(username string) bool {
+	query := `SELECT FROM users WHERE users.username = ?`
+	return Session.Query(query, username).Iter().NumRows() >= 1
+}
+
+func numOfUsers() int {
+	query := `SELECT * FROM users`
+	return Session.Query(query).Iter().NumRows()
+}
+
+func saveUser(user *models.User) error {
+	query := `INSERT INTO users (id, first_name, last_name, username) VALUES (?, ?, ?, ?)`
+	if err:= Session.Query(query, user.ID, user.FirstName, user.LastName, user.Username).Exec(); err != nil {
+		log.Print(err.Error())
+		return errors.New(401, *swag.String("Creation Error Occured"))
+	}
+	return nil
+}
+
+func deleteUser(id string) error {
+	query := `DELETE FROM users WHERE id = ?`
+	if err := Session.Query(query, id).Exec(); err != nil {
+		log.Print(err.Error())
+		return errors.New(500, *swag.String("Deletion Error Occured"))
+	}
+	return nil
+}
+
+func addUserHelper(user *models.User) error {
+	if user == nil {
+		return errors.New(401, *swag.String("User body missing"))
+	}
+	newUserId := newUserId()
+	user.ID = newUserId
+	if !userExistsByUsername(*user.Username) {
+		saveUser(user)
+	}
+	return nil
+}
+
+func deleteUserHelper(id string) error {
+	return deleteUser(id)
+}
+
+func getAllUsersHelper() (result []*models.User) {
+	// TODO
+	//result = make([]*models.User, 0)
+	//m := map[string]interface{}{}
+	//query := `SELECT id,username,first_name,last_name FROM users`
+	//iter := Session.Query(query).Iter()
+	//for iter.MapScan(m) {
+	//	result = append(result, &models.User{
+	//		ID: m["id"].(string),
+	//		Username: *m["username"].(string),
+	//		FirstName: m["first_name"].(string)
+	//		LastName: m["last_name"].(string)
+	//	})
+	//}
+	//return
+}
 func configureFlags(api *operations.UserAPI) {
 	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
 }
@@ -39,19 +114,27 @@ func configureAPI(api *operations.UserAPI) http.Handler {
 	api.JSONProducer = runtime.JSONProducer()
 
 	api.UsersCreateOneHandler = users.CreateOneHandlerFunc(func(params users.CreateOneParams) middleware.Responder {
-		// TODO: Add User Create
+		if err := addUserHelper(params.Body); err != nil {
+			return users.NewCreateOneDefault(401).WithPayload(&models.Error{StatusCode: 401, Status: swag.String("Creation Error Occured")})
+		}
+		return users.NewCreateOneCreated().WithPayload(params.Body)
 	})
 	api.UsersDeleteOneHandler = users.DeleteOneHandlerFunc(func(params users.DeleteOneParams) middleware.Responder {
-		// TODO: Add User delete
+		if err := deleteUserHelper(params.ID); err != nil {
+			return users.NewDeleteOneDefault(401).WithPayload(&models.Error{StatusCode: 401, Status: swag.String("Deletion Error Occured")})
+		}
+		return users.NewDeleteOneNoContent()
 	})
 	api.UsersGetAllHandler = users.GetAllHandlerFunc(func(params users.GetAllParams) middleware.Responder {
-		// TODO: Add Get All Users
+		return users.NewGetAllOK().WithPayload(getAllUsersHelper())
 	})
 	api.UsersGetOneHandler = users.GetOneHandlerFunc(func(params users.GetOneParams) middleware.Responder {
 		// TODO: Add Get One User
+		return users.NewDeleteOneNoContent()
 	})
 	api.UsersPatchOneHandler = users.PatchOneHandlerFunc(func(params users.PatchOneParams) middleware.Responder {
 		// TODO: Add Patch One User
+		return users.NewDeleteOneNoContent()
 	})
 
 	api.ServerShutdown = func() { Session.Close() }
