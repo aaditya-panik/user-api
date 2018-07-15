@@ -56,3 +56,61 @@ func (o *PatchOneOK) WriteResponse(rw http.ResponseWriter, producer runtime.Prod
 		}
 	}
 }
+
+/*PatchOneDefault An error occured (PATCH /user/{id})
+
+swagger:response patchOneDefault
+*/
+type PatchOneDefault struct {
+	_statusCode int
+
+	/*
+	  In: Body
+	*/
+	Payload *models.Error `json:"body,omitempty"`
+}
+
+// NewPatchOneDefault creates PatchOneDefault with default headers values
+func NewPatchOneDefault(code int) *PatchOneDefault {
+	if code <= 0 {
+		code = 500
+	}
+
+	return &PatchOneDefault{
+		_statusCode: code,
+	}
+}
+
+// WithStatusCode adds the status to the patch one default response
+func (o *PatchOneDefault) WithStatusCode(code int) *PatchOneDefault {
+	o._statusCode = code
+	return o
+}
+
+// SetStatusCode sets the status to the patch one default response
+func (o *PatchOneDefault) SetStatusCode(code int) {
+	o._statusCode = code
+}
+
+// WithPayload adds the payload to the patch one default response
+func (o *PatchOneDefault) WithPayload(payload *models.Error) *PatchOneDefault {
+	o.Payload = payload
+	return o
+}
+
+// SetPayload sets the payload to the patch one default response
+func (o *PatchOneDefault) SetPayload(payload *models.Error) {
+	o.Payload = payload
+}
+
+// WriteResponse to the client
+func (o *PatchOneDefault) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	rw.WriteHeader(o._statusCode)
+	if o.Payload != nil {
+		payload := o.Payload
+		if err := producer.Produce(rw, payload); err != nil {
+			panic(err) // let the recovery middleware deal with this
+		}
+	}
+}

@@ -9,9 +9,12 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 
 	strfmt "github.com/go-openapi/strfmt"
+
+	models "userapi/models"
 )
 
 // NewPatchOneParams creates a new PatchOneParams object
@@ -31,6 +34,10 @@ type PatchOneParams struct {
 	HTTPRequest *http.Request `json:"-"`
 
 	/*
+	  In: body
+	*/
+	Body *models.PatchDocument
+	/*
 	  Required: true
 	  In: path
 	*/
@@ -46,6 +53,22 @@ func (o *PatchOneParams) BindRequest(r *http.Request, route *middleware.MatchedR
 
 	o.HTTPRequest = r
 
+	if runtime.HasBody(r) {
+		defer r.Body.Close()
+		var body models.PatchDocument
+		if err := route.Consumer.Consume(r.Body, &body); err != nil {
+			res = append(res, errors.NewParseError("body", "body", "", err))
+		} else {
+			// validate body object
+			if err := body.Validate(route.Formats); err != nil {
+				res = append(res, err)
+			}
+
+			if len(res) == 0 {
+				o.Body = &body
+			}
+		}
+	}
 	rID, rhkID, _ := route.Params.GetOK("id")
 	if err := o.bindID(rID, rhkID, route.Formats); err != nil {
 		res = append(res, err)

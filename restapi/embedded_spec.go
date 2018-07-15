@@ -131,11 +131,26 @@ func init() {
           "users"
         ],
         "operationId": "patchOne",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/patchDocument"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Patch user with specific id",
             "schema": {
               "$ref": "#/definitions/user"
+            }
+          },
+          "default": {
+            "description": "An error occured (PATCH /user/{id})",
+            "schema": {
+              "$ref": "#/definitions/error"
             }
           }
         }
@@ -163,6 +178,23 @@ func init() {
         "status_code": {
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "patchDocument": {
+      "type": "object",
+      "properties": {
+        "first_name": {
+          "type": "string",
+          "minLength": 3
+        },
+        "last_name": {
+          "type": "string",
+          "minLength": 3
+        },
+        "username": {
+          "type": "string",
+          "minLength": 6
         }
       }
     },
@@ -308,11 +340,26 @@ func init() {
           "users"
         ],
         "operationId": "patchOne",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/patchDocument"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Patch user with specific id",
             "schema": {
               "$ref": "#/definitions/user"
+            }
+          },
+          "default": {
+            "description": "An error occured (PATCH /user/{id})",
+            "schema": {
+              "$ref": "#/definitions/error"
             }
           }
         }
@@ -340,6 +387,23 @@ func init() {
         "status_code": {
           "type": "integer",
           "format": "int64"
+        }
+      }
+    },
+    "patchDocument": {
+      "type": "object",
+      "properties": {
+        "first_name": {
+          "type": "string",
+          "minLength": 3
+        },
+        "last_name": {
+          "type": "string",
+          "minLength": 3
+        },
+        "username": {
+          "type": "string",
+          "minLength": 6
         }
       }
     },

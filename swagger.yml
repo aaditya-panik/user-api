@@ -78,11 +78,20 @@ paths:
       tags:
         - users
       operationId: patchOne
+      parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: "#/definitions/patchDocument"
       responses:
         200:
           description: Patch user with specific id
           schema:
             $ref: "#/definitions/user"
+        default:
+          description: An error occured (PATCH /user/{id})
+          schema:
+            $ref: "#/definitions/error"
 definitions:
   user:
     type: object
@@ -94,6 +103,18 @@ definitions:
       id:
         type: string
         readOnly: true
+      username:
+        type: string
+        minLength: 6
+      first_name:
+        type: string
+        minLength: 3
+      last_name:
+        type: string
+        minLength: 3
+  patchDocument:
+    type: object
+    properties:
       username:
         type: string
         minLength: 6
