@@ -11,9 +11,12 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"userapi/restapi/operations"
 	"userapi/restapi/operations/users"
+	"userapi/restapi/cassandra"
 )
 
 //go:generate swagger generate server --target .. --name user --spec ../swagger.yml
+
+var Session = cassandra.Session
 
 func configureFlags(api *operations.UserAPI) {
 	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
@@ -51,7 +54,7 @@ func configureAPI(api *operations.UserAPI) http.Handler {
 		// TODO: Add Patch One User
 	})
 
-	api.ServerShutdown = func() {}
+	api.ServerShutdown = func() { Session.Close() }
 
 	return setupGlobalMiddleware(api.Serve(setupMiddlewares))
 }
