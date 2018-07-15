@@ -93,6 +93,26 @@ func getAllUsersHelper() (result []*models.User) {
 	}
 	return
 }
+
+func getOneUserHelper(id string) (result *models.User) {
+	var Id string
+	var username string
+	var firstName string
+	var lastName string
+	query := `SELECT id,username,first_name,last_name FROM users WHERE id = ? LIMIT 1`
+	if err := Session.Query(query, id).Scan(&Id, &username, &firstName, &lastName); err != nil {
+		log.Print("User not found")
+		return nil
+	}
+	temp := models.User{
+		ID: Id,
+		Username: username,
+		FirstName: firstName,
+		LastName: lastName,
+	}
+	return &temp
+}
+
 func configureFlags(api *operations.UserAPI) {
 	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
 }
@@ -129,8 +149,11 @@ func configureAPI(api *operations.UserAPI) http.Handler {
 		return users.NewGetAllOK().WithPayload(getAllUsersHelper())
 	})
 	api.UsersGetOneHandler = users.GetOneHandlerFunc(func(params users.GetOneParams) middleware.Responder {
-		// TODO: Add Get One User
-		return users.NewDeleteOneNoContent()
+		requestedUser := getOneUserHelper(params.ID)
+		if requestedUser == nil {
+			return users.NewGetOneDefault(500).WithPayload(&models.Error{StatusCode: 500, Status: swag.String("User doesn't exist or Internal Server Error")})
+		}
+		return users.NewGetOneOK().WithPayload(requestedUser)
 	})
 	api.UsersPatchOneHandler = users.PatchOneHandlerFunc(func(params users.PatchOneParams) middleware.Responder {
 		// TODO: Add Patch One User
