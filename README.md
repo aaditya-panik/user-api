@@ -5,7 +5,7 @@ A basic practice API utilizing [GoLang](https://golang.org/). The project layout
 ## User Model
 The user model is as follows:
 
-```
+```sql
 CREATE TABLE users (
     id varchar,
     username varchar,
