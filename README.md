@@ -8,10 +8,10 @@ The user model is as follows:
 ```sql
 CREATE TABLE users (
     id varchar,
-    username varchar,
     first_name varchar,
     last_name varchar,
-    PRIMARY KEY(id, username)
+    email varchar
+    PRIMARY KEY(id)
 );
 ```
 Run the above command on the Cassandra cluster with the appropriate settings pre-defined.
