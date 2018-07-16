@@ -11,98 +11,128 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"userapi/restapi/operations"
 	"userapi/restapi/operations/users"
+	"userapi/restapi/cassandra"
 	"userapi/models"
 	"github.com/rs/xid"
 	"github.com/go-openapi/swag"
-	"sync"
+	"log"
+	"github.com/go-openapi/strfmt"
 )
 
 //go:generate swagger generate server --target .. --name user --spec ../swagger.yml
 
-var usersMap = make(map[string]*models.User)
-var userLock = sync.Mutex{}
+var Session = cassandra.Session
+
 // Utility Functions
 
-func newUserID() xid.ID {
-	return xid.New()
+func newUserId() string {
+	return xid.New().String()
 }
 
-// Other Utility Functions
+func userExistsById(id string) bool {
+	query := `SELECT * FROM users WHERE id = ?`
+	return Session.Query(query, id).Iter().NumRows() >= 1
+}
 
-func addUser(user *models.User) error {
-	if user == nil {
-		return errors.New(401, "User must be provided. Check documentation")
+func numOfUsers() int {
+	query := `SELECT * FROM users`
+	return Session.Query(query).Iter().NumRows()
+}
+
+func saveUser(user *models.User) error {
+	query := `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`
+	if err:= Session.Query(query,user.ID, user.FirstName, user.LastName, user.Email).Exec(); err != nil {
+		log.Print(err.Error())
+		return errors.New(500, *swag.String("Creation Error Occured"))
 	}
-	if _, exists := usersMap[*user.Username]; exists {
-		return errors.New(401, "Username already exists.")
-	}
-	userLock.Lock()
-	defer userLock.Unlock()
-
-	newId := newUserID()
-	user.ID = newId.String()
-	usersMap[*user.Username] = user
-
 	return nil
 }
 
-func deleteUser(id string) bool {
-	for _, user := range usersMap {
-		if user.ID == id {
-			delete(usersMap, *user.Username)
-			return true
-		}
+func deleteUser(id string) error {
+	query := `DELETE FROM users WHERE id = ?`
+	if err := Session.Query(query, id).Exec(); err != nil {
+		log.Print(err.Error())
+		return errors.New(500, *swag.String("Deletion Error Occured"))
 	}
-	return false
+	return nil
 }
 
-func allUsers() (result []*models.User) {
+func addUserHelper(user *models.User) error {
+	if user == nil {
+		return errors.New(401, *swag.String("User Body Missing"))
+	}
+	newUserId := newUserId()
+	user.ID = newUserId
+	saveUser(user)
+	return nil
+}
+
+func deleteUserHelper(id string) error {
+	if !userExistsById(id) {
+		return errors.New(404, "User Not Found")
+	}
+	return deleteUser(id)
+}
+
+func getAllUsersHelper() (result []*models.User) {
 	result = make([]*models.User, 0)
-	for _, user := range usersMap {
-		result = append(result, user)
+	m := map[string]interface{}{}
+	query := `SELECT id,first_name,last_name,email FROM users`
+	iterator := Session.Query(query).Iter()
+	for iterator.MapScan(m) {
+		result = append(result, &models.User{
+			ID: m["id"].(string),
+			FirstName: m["first_name"].(string),
+			LastName: m["last_name"].(string),
+			Email: strfmt.Email(m["email"].(string)),
+		})
+		m = map[string]interface{}{}
 	}
 	return
 }
 
-func specificUser(id string) (result *models.User) {
-	userLock.Lock()
-	defer userLock.Unlock()
-	for _, user := range usersMap {
-		if user.ID == id {
-			result = user
-			return
-		}
+func getOneUserHelper(id string) (result *models.User) {
+	var Id string
+	var firstName string
+	var lastName string
+	var email strfmt.Email
+	query := `SELECT id,first_name,last_name,email FROM users WHERE id = ? LIMIT 1`
+	if err := Session.Query(query, id).Scan(&Id, &firstName, &lastName, &email); err != nil {
+		log.Print("User not found")
+		return nil
 	}
-	return
+	temp := models.User{
+		ID: Id,
+		FirstName: firstName,
+		LastName: lastName,
+		Email: email,
+	}
+	return &temp
 }
 
-func patchUser(id string, patch *models.PatchDocument) (result *models.User) {
+func patchOneUserHelper(id string, patch *models.PatchDocument) (result *models.User, errorCode int) {
 	if patch == nil || id == "" {
-		return
+		return nil,400
 	}
-	userLock.Lock()
-	defer userLock.Unlock()
-	for _, user := range usersMap {
-		if user.ID == id {
-			if patch.Username != "" {
-				if _, exists := usersMap[patch.Username]; exists {
-					return
-				}
-				delete(usersMap, *user.Username)
-				*user.Username = patch.Username
-				usersMap[*user.Username] = user
-			}
-			if patch.FirstName != "" {
-				*user.FirstName = patch.FirstName
-			}
-			if patch.LastName != "" {
-				*user.LastName = patch.LastName
-			}
-			result = user
-			return
-		}
+	if !userExistsById(id) {
+		return nil, 404
 	}
-	return
+	currentUser := getOneUserHelper(id)
+	if patch.FirstName != "" {
+		currentUser.FirstName = patch.FirstName
+	}
+	if patch.LastName != "" {
+		currentUser.LastName = patch.LastName
+	}
+	if patch.Email != "" {
+		currentUser.Email = patch.Email
+	}
+	if err := saveUser(currentUser); err != nil {
+		log.Printf("Patch Failed for User ID %s", currentUser.ID)
+		return nil, 500
+	}
+	result = currentUser
+	return result, 200
 }
 
 func configureFlags(api *operations.UserAPI) {
@@ -126,40 +156,46 @@ func configureAPI(api *operations.UserAPI) http.Handler {
 	api.JSONProducer = runtime.JSONProducer()
 
 	api.UsersCreateOneHandler = users.CreateOneHandlerFunc(func(params users.CreateOneParams) middleware.Responder {
-		if err := addUser(params.Body); err != nil {
-			return users.NewCreateOneDefault(401).WithPayload(&models.Error{StatusCode: 401, Status: swag.String(err.Error())})
+		if err := addUserHelper(params.Body); err != nil {
+			return users.NewCreateOneBadRequest().WithPayload(&models.Error{Status: swag.String("Invalid Form Data - Bad Request")})
 		}
 		return users.NewCreateOneCreated().WithPayload(params.Body)
 	})
 	api.UsersDeleteOneHandler = users.DeleteOneHandlerFunc(func(params users.DeleteOneParams) middleware.Responder {
-		if ok := deleteUser(params.ID); !ok {
-			return users.NewDeleteOneDefault(404).WithPayload(&models.Error{StatusCode: 404, Status: swag.String("User not found")})
+		if err := deleteUserHelper(params.ID); err != nil {
+			return users.NewDeleteOneNotFound().WithPayload(&models.Error{Status: swag.String("User Not Found")})
 		}
 		return users.NewDeleteOneNoContent()
 	})
 	api.UsersGetAllHandler = users.GetAllHandlerFunc(func(params users.GetAllParams) middleware.Responder {
-		allUsers := allUsers()
+		allUsers := getAllUsersHelper()
 		if len(allUsers) == 0 {
-			return users.NewGetAllDefault(404).WithPayload(&models.Error{StatusCode: 404, Status: swag.String("Users not found.")})
+			return users.NewGetAllNotFound().WithPayload(&models.Error{Status: swag.String("Users Not Found")})
 		}
 		return users.NewGetAllOK().WithPayload(allUsers)
 	})
 	api.UsersGetOneHandler = users.GetOneHandlerFunc(func(params users.GetOneParams) middleware.Responder {
-		specificUser := specificUser(params.ID)
-		if specificUser == nil {
-			return users.NewGetOneDefault(404).WithPayload(&models.Error{StatusCode: 404, Status: swag.String("User not found.")})
+		requestedUser := getOneUserHelper(params.ID)
+		if requestedUser == nil {
+			return users.NewGetOneNotFound().WithPayload(&models.Error{Status: swag.String("User Not Found")})
 		}
-		return users.NewGetOneOK().WithPayload(specificUser)
+		return users.NewGetOneOK().WithPayload(requestedUser)
 	})
 	api.UsersPatchOneHandler = users.PatchOneHandlerFunc(func(params users.PatchOneParams) middleware.Responder {
-		patchedUser := patchUser(params.ID, params.Body)
+		patchedUser, err := patchOneUserHelper(params.ID, params.Body)
 		if patchedUser == nil {
-			return users.NewPatchOneDefault(401).WithPayload(&models.Error{StatusCode: 401, Status: swag.String("Error Occured")})
+			if err == 400 {
+				return users.NewPatchOneBadRequest().WithPayload(&models.Error{Status: swag.String("Invalid Patch Form - Bad Request")})
+			} else if err == 404 {
+				return users.NewPatchOneNotFound().WithPayload(&models.Error{Status: swag.String("User Not Found")})
+			} else if err == 500 {
+				return users.NewPatchOneDefault(500).WithPayload(&models.Error{Status: swag.String("Internal Server Error")})
+			}
 		}
 		return users.NewPatchOneOK().WithPayload(patchedUser)
 	})
 
-	api.ServerShutdown = func() {}
+	api.ServerShutdown = func() { Session.Close() }
 
 	return setupGlobalMiddleware(api.Serve(setupMiddlewares))
 }
