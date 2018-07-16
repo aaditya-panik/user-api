@@ -17,6 +17,11 @@ import (
 // swagger:model patchDocument
 type PatchDocument struct {
 
+	// email
+	// Min Length: 6
+	// Format: email
+	Email strfmt.Email `json:"email,omitempty"`
+
 	// first name
 	// Min Length: 3
 	FirstName string `json:"first_name,omitempty"`
@@ -24,15 +29,15 @@ type PatchDocument struct {
 	// last name
 	// Min Length: 3
 	LastName string `json:"last_name,omitempty"`
-
-	// username
-	// Min Length: 6
-	Username string `json:"username,omitempty"`
 }
 
 // Validate validates this patch document
 func (m *PatchDocument) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateEmail(formats); err != nil {
+		res = append(res, err)
+	}
 
 	if err := m.validateFirstName(formats); err != nil {
 		res = append(res, err)
@@ -42,13 +47,26 @@ func (m *PatchDocument) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateUsername(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *PatchDocument) validateEmail(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Email) { // not required
+		return nil
+	}
+
+	if err := validate.MinLength("email", "body", string(m.Email), 6); err != nil {
+		return err
+	}
+
+	if err := validate.FormatOf("email", "body", "email", m.Email.String(), formats); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -72,19 +90,6 @@ func (m *PatchDocument) validateLastName(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MinLength("last_name", "body", string(m.LastName), 3); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *PatchDocument) validateUsername(formats strfmt.Registry) error {
-
-	if swag.IsZero(m.Username) { // not required
-		return nil
-	}
-
-	if err := validate.MinLength("username", "body", string(m.Username), 6); err != nil {
 		return err
 	}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/go-openapi/swag"
 	"log"
+	"github.com/go-openapi/strfmt"
 )
 
 //go:generate swagger generate server --target .. --name user --spec ../swagger.yml
@@ -29,13 +30,8 @@ func newUserId() string {
 }
 
 func userExistsById(id string) bool {
-	query := `SELECT FROM users WHERE id = ?`
+	query := `SELECT * FROM users WHERE id = ?`
 	return Session.Query(query, id).Iter().NumRows() >= 1
-}
-
-func userExistsByUsername(username string) bool {
-	query := `SELECT FROM users WHERE users.username = ?`
-	return Session.Query(query, username).Iter().NumRows() >= 1
 }
 
 func numOfUsers() int {
@@ -44,10 +40,10 @@ func numOfUsers() int {
 }
 
 func saveUser(user *models.User) error {
-	query := `INSERT INTO users (id, first_name, last_name, username) VALUES (?, ?, ?, ?)`
-	if err:= Session.Query(query, user.ID, user.FirstName, user.LastName, user.Username).Exec(); err != nil {
+	query := `INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)`
+	if err:= Session.Query(query,user.ID, user.FirstName, user.LastName, user.Email).Exec(); err != nil {
 		log.Print(err.Error())
-		return errors.New(401, *swag.String("Creation Error Occured"))
+		return errors.New(500, *swag.String("Creation Error Occured"))
 	}
 	return nil
 }
@@ -63,31 +59,32 @@ func deleteUser(id string) error {
 
 func addUserHelper(user *models.User) error {
 	if user == nil {
-		return errors.New(401, *swag.String("User body missing"))
+		return errors.New(401, *swag.String("User Body Missing"))
 	}
 	newUserId := newUserId()
 	user.ID = newUserId
-	if !userExistsByUsername(user.Username) {
-		saveUser(user)
-	}
+	saveUser(user)
 	return nil
 }
 
 func deleteUserHelper(id string) error {
+	if !userExistsById(id) {
+		return errors.New(404, "User Not Found")
+	}
 	return deleteUser(id)
 }
 
 func getAllUsersHelper() (result []*models.User) {
 	result = make([]*models.User, 0)
 	m := map[string]interface{}{}
-	query := `SELECT id,username,first_name,last_name FROM users`
-	iter := Session.Query(query).Iter()
-	for iter.MapScan(m) {
+	query := `SELECT id,first_name,last_name,email FROM users`
+	iterator := Session.Query(query).Iter()
+	for iterator.MapScan(m) {
 		result = append(result, &models.User{
 			ID: m["id"].(string),
-			Username: m["username"].(string),
 			FirstName: m["first_name"].(string),
 			LastName: m["last_name"].(string),
+			Email: strfmt.Email(m["email"].(string)),
 		})
 		m = map[string]interface{}{}
 	}
@@ -96,21 +93,46 @@ func getAllUsersHelper() (result []*models.User) {
 
 func getOneUserHelper(id string) (result *models.User) {
 	var Id string
-	var username string
 	var firstName string
 	var lastName string
-	query := `SELECT id,username,first_name,last_name FROM users WHERE id = ? LIMIT 1`
-	if err := Session.Query(query, id).Scan(&Id, &username, &firstName, &lastName); err != nil {
+	var email strfmt.Email
+	query := `SELECT id,first_name,last_name,email FROM users WHERE id = ? LIMIT 1`
+	if err := Session.Query(query, id).Scan(&Id, &firstName, &lastName, &email); err != nil {
 		log.Print("User not found")
 		return nil
 	}
 	temp := models.User{
 		ID: Id,
-		Username: username,
 		FirstName: firstName,
 		LastName: lastName,
+		Email: email,
 	}
 	return &temp
+}
+
+func patchOneUserHelper(id string, patch *models.PatchDocument) (result *models.User, errorCode int) {
+	if patch == nil || id == "" {
+		return nil,400
+	}
+	if !userExistsById(id) {
+		return nil, 404
+	}
+	currentUser := getOneUserHelper(id)
+	if patch.FirstName != "" {
+		currentUser.FirstName = patch.FirstName
+	}
+	if patch.LastName != "" {
+		currentUser.LastName = patch.LastName
+	}
+	if patch.Email != "" {
+		currentUser.Email = patch.Email
+	}
+	if err := saveUser(currentUser); err != nil {
+		log.Printf("Patch Failed for User ID %s", currentUser.ID)
+		return nil, 500
+	}
+	result = currentUser
+	return result, 200
 }
 
 func configureFlags(api *operations.UserAPI) {
@@ -135,29 +157,42 @@ func configureAPI(api *operations.UserAPI) http.Handler {
 
 	api.UsersCreateOneHandler = users.CreateOneHandlerFunc(func(params users.CreateOneParams) middleware.Responder {
 		if err := addUserHelper(params.Body); err != nil {
-			return users.NewCreateOneDefault(401).WithPayload(&models.Error{StatusCode: 401, Status: swag.String("Creation Error Occured")})
+			return users.NewCreateOneBadRequest().WithPayload(&models.Error{Status: swag.String("Invalid Form Data - Bad Request")})
 		}
 		return users.NewCreateOneCreated().WithPayload(params.Body)
 	})
 	api.UsersDeleteOneHandler = users.DeleteOneHandlerFunc(func(params users.DeleteOneParams) middleware.Responder {
 		if err := deleteUserHelper(params.ID); err != nil {
-			return users.NewDeleteOneDefault(401).WithPayload(&models.Error{StatusCode: 401, Status: swag.String("Deletion Error Occured")})
+			return users.NewDeleteOneNotFound().WithPayload(&models.Error{Status: swag.String("User Not Found")})
 		}
 		return users.NewDeleteOneNoContent()
 	})
 	api.UsersGetAllHandler = users.GetAllHandlerFunc(func(params users.GetAllParams) middleware.Responder {
-		return users.NewGetAllOK().WithPayload(getAllUsersHelper())
+		allUsers := getAllUsersHelper()
+		if len(allUsers) == 0 {
+			return users.NewGetAllNotFound().WithPayload(&models.Error{Status: swag.String("Users Not Found")})
+		}
+		return users.NewGetAllOK().WithPayload(allUsers)
 	})
 	api.UsersGetOneHandler = users.GetOneHandlerFunc(func(params users.GetOneParams) middleware.Responder {
 		requestedUser := getOneUserHelper(params.ID)
 		if requestedUser == nil {
-			return users.NewGetOneDefault(500).WithPayload(&models.Error{StatusCode: 500, Status: swag.String("User doesn't exist or Internal Server Error")})
+			return users.NewGetOneNotFound().WithPayload(&models.Error{Status: swag.String("User Not Found")})
 		}
 		return users.NewGetOneOK().WithPayload(requestedUser)
 	})
 	api.UsersPatchOneHandler = users.PatchOneHandlerFunc(func(params users.PatchOneParams) middleware.Responder {
-		// TODO: Add Patch One User
-		return users.NewDeleteOneNoContent()
+		patchedUser, err := patchOneUserHelper(params.ID, params.Body)
+		if patchedUser == nil {
+			if err == 400 {
+				return users.NewPatchOneBadRequest().WithPayload(&models.Error{Status: swag.String("Invalid Patch Form - Bad Request")})
+			} else if err == 404 {
+				return users.NewPatchOneNotFound().WithPayload(&models.Error{Status: swag.String("User Not Found")})
+			} else if err == 500 {
+				return users.NewPatchOneDefault(500).WithPayload(&models.Error{Status: swag.String("Internal Server Error")})
+			}
+		}
+		return users.NewPatchOneOK().WithPayload(patchedUser)
 	})
 
 	api.ServerShutdown = func() { Session.Close() }

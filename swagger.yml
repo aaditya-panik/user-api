@@ -22,8 +22,8 @@ paths:
             type: array
             items:
               $ref: "#/definitions/user"
-        default:
-          description: An error occured (GET /user)
+        404:
+          description: Users Not Found
           schema:
             $ref: "#/definitions/error"
     post:
@@ -40,8 +40,8 @@ paths:
           description: Created
           schema:
             $ref: "#/definitions/user"
-        default:
-          description: An error occured (POST user)
+        400:
+          description: Invalid Form Data - Bad Request
           schema:
             $ref: "#/definitions/error"
   /user/{id}:
@@ -59,8 +59,8 @@ paths:
           description: User with specific id
           schema:
             $ref: "#/definitions/user"
-        default:
-          description: An error occured(GET /user/{id})
+        404:
+          description: User Not Found
           schema:
             $ref: "#/definitions/error"
     delete:
@@ -70,8 +70,8 @@ paths:
       responses:
         204:
           description: Deleted
-        default:
-          description: An error occured (DELETE /user/{id})
+        404:
+          description: User Not Found
           schema:
             $ref: "#/definitions/error"
     patch:
@@ -88,49 +88,56 @@ paths:
           description: Patch user with specific id
           schema:
             $ref: "#/definitions/user"
+        400:
+          description: Invalid Patch Form - Bad Request
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: User Not Found
+          schema:
+            $ref: "#/definitions/error"
         default:
-          description: An error occured (PATCH /user/{id})
+          description: Internal Server Error
           schema:
             $ref: "#/definitions/error"
 definitions:
   user:
     type: object
     required:
-    - username
     - first_name
     - last_name
+    - email
     properties:
       id:
         type: string
         readOnly: true
-      username:
-        type: string
-        minLength: 6
       first_name:
         type: string
         minLength: 3
       last_name:
         type: string
         minLength: 3
+      email:
+        type: string
+        format: email
+        minLength: 6
   patchDocument:
     type: object
     properties:
-      username:
-        type: string
-        minLength: 6
       first_name:
         type: string
         minLength: 3
       last_name:
         type: string
         minLength: 3
+      email:
+        type: string
+        format: email
+        minLength: 6
   error:
     type: object
     required:
     - status
     properties:
-      status_code:
-        type: integer
-        format: int64
       status:
         type: string

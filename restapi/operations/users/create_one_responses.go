@@ -57,12 +57,14 @@ func (o *CreateOneCreated) WriteResponse(rw http.ResponseWriter, producer runtim
 	}
 }
 
-/*CreateOneDefault An error occured (POST user)
+// CreateOneBadRequestCode is the HTTP code returned for type CreateOneBadRequest
+const CreateOneBadRequestCode int = 400
 
-swagger:response createOneDefault
+/*CreateOneBadRequest Invalid Form Data - Bad Request
+
+swagger:response createOneBadRequest
 */
-type CreateOneDefault struct {
-	_statusCode int
+type CreateOneBadRequest struct {
 
 	/*
 	  In: Body
@@ -70,43 +72,27 @@ type CreateOneDefault struct {
 	Payload *models.Error `json:"body,omitempty"`
 }
 
-// NewCreateOneDefault creates CreateOneDefault with default headers values
-func NewCreateOneDefault(code int) *CreateOneDefault {
-	if code <= 0 {
-		code = 500
-	}
+// NewCreateOneBadRequest creates CreateOneBadRequest with default headers values
+func NewCreateOneBadRequest() *CreateOneBadRequest {
 
-	return &CreateOneDefault{
-		_statusCode: code,
-	}
+	return &CreateOneBadRequest{}
 }
 
-// WithStatusCode adds the status to the create one default response
-func (o *CreateOneDefault) WithStatusCode(code int) *CreateOneDefault {
-	o._statusCode = code
-	return o
-}
-
-// SetStatusCode sets the status to the create one default response
-func (o *CreateOneDefault) SetStatusCode(code int) {
-	o._statusCode = code
-}
-
-// WithPayload adds the payload to the create one default response
-func (o *CreateOneDefault) WithPayload(payload *models.Error) *CreateOneDefault {
+// WithPayload adds the payload to the create one bad request response
+func (o *CreateOneBadRequest) WithPayload(payload *models.Error) *CreateOneBadRequest {
 	o.Payload = payload
 	return o
 }
 
-// SetPayload sets the payload to the create one default response
-func (o *CreateOneDefault) SetPayload(payload *models.Error) {
+// SetPayload sets the payload to the create one bad request response
+func (o *CreateOneBadRequest) SetPayload(payload *models.Error) {
 	o.Payload = payload
 }
 
 // WriteResponse to the client
-func (o *CreateOneDefault) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+func (o *CreateOneBadRequest) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
-	rw.WriteHeader(o._statusCode)
+	rw.WriteHeader(400)
 	if o.Payload != nil {
 		payload := o.Payload
 		if err := producer.Produce(rw, payload); err != nil {

@@ -50,8 +50,8 @@ func init() {
               }
             }
           },
-          "default": {
-            "description": "An error occured (GET /user)",
+          "404": {
+            "description": "Users Not Found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -79,8 +79,8 @@ func init() {
               "$ref": "#/definitions/user"
             }
           },
-          "default": {
-            "description": "An error occured (POST user)",
+          "400": {
+            "description": "Invalid Form Data - Bad Request",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -101,8 +101,8 @@ func init() {
               "$ref": "#/definitions/user"
             }
           },
-          "default": {
-            "description": "An error occured(GET /user/{id})",
+          "404": {
+            "description": "User Not Found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -118,8 +118,8 @@ func init() {
           "204": {
             "description": "Deleted"
           },
-          "default": {
-            "description": "An error occured (DELETE /user/{id})",
+          "404": {
+            "description": "User Not Found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -147,8 +147,20 @@ func init() {
               "$ref": "#/definitions/user"
             }
           },
+          "400": {
+            "description": "Invalid Patch Form - Bad Request",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "User Not Found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
           "default": {
-            "description": "An error occured (PATCH /user/{id})",
+            "description": "Internal Server Error",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -174,16 +186,17 @@ func init() {
       "properties": {
         "status": {
           "type": "string"
-        },
-        "status_code": {
-          "type": "integer",
-          "format": "int64"
         }
       }
     },
     "patchDocument": {
       "type": "object",
       "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 6
+        },
         "first_name": {
           "type": "string",
           "minLength": 3
@@ -191,21 +204,22 @@ func init() {
         "last_name": {
           "type": "string",
           "minLength": 3
-        },
-        "username": {
-          "type": "string",
-          "minLength": 6
         }
       }
     },
     "user": {
       "type": "object",
       "required": [
-        "username",
         "first_name",
-        "last_name"
+        "last_name",
+        "email"
       ],
       "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 6
+        },
         "first_name": {
           "type": "string",
           "minLength": 3
@@ -217,10 +231,6 @@ func init() {
         "last_name": {
           "type": "string",
           "minLength": 3
-        },
-        "username": {
-          "type": "string",
-          "minLength": 6
         }
       }
     }
@@ -259,8 +269,8 @@ func init() {
               }
             }
           },
-          "default": {
-            "description": "An error occured (GET /user)",
+          "404": {
+            "description": "Users Not Found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -288,8 +298,8 @@ func init() {
               "$ref": "#/definitions/user"
             }
           },
-          "default": {
-            "description": "An error occured (POST user)",
+          "400": {
+            "description": "Invalid Form Data - Bad Request",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -310,8 +320,8 @@ func init() {
               "$ref": "#/definitions/user"
             }
           },
-          "default": {
-            "description": "An error occured(GET /user/{id})",
+          "404": {
+            "description": "User Not Found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -327,8 +337,8 @@ func init() {
           "204": {
             "description": "Deleted"
           },
-          "default": {
-            "description": "An error occured (DELETE /user/{id})",
+          "404": {
+            "description": "User Not Found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -356,8 +366,20 @@ func init() {
               "$ref": "#/definitions/user"
             }
           },
+          "400": {
+            "description": "Invalid Patch Form - Bad Request",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "User Not Found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
           "default": {
-            "description": "An error occured (PATCH /user/{id})",
+            "description": "Internal Server Error",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -383,16 +405,17 @@ func init() {
       "properties": {
         "status": {
           "type": "string"
-        },
-        "status_code": {
-          "type": "integer",
-          "format": "int64"
         }
       }
     },
     "patchDocument": {
       "type": "object",
       "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 6
+        },
         "first_name": {
           "type": "string",
           "minLength": 3
@@ -400,21 +423,22 @@ func init() {
         "last_name": {
           "type": "string",
           "minLength": 3
-        },
-        "username": {
-          "type": "string",
-          "minLength": 6
         }
       }
     },
     "user": {
       "type": "object",
       "required": [
-        "username",
         "first_name",
-        "last_name"
+        "last_name",
+        "email"
       ],
       "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 6
+        },
         "first_name": {
           "type": "string",
           "minLength": 3
@@ -426,10 +450,6 @@ func init() {
         "last_name": {
           "type": "string",
           "minLength": 3
-        },
-        "username": {
-          "type": "string",
-          "minLength": 6
         }
       }
     }

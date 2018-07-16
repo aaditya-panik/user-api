@@ -17,6 +17,12 @@ import (
 // swagger:model user
 type User struct {
 
+	// email
+	// Required: true
+	// Min Length: 6
+	// Format: email
+	Email strfmt.Email `json:"email"`
+
 	// first name
 	// Required: true
 	// Min Length: 3
@@ -30,16 +36,15 @@ type User struct {
 	// Required: true
 	// Min Length: 3
 	LastName string `json:"last_name"`
-
-	// username
-	// Required: true
-	// Min Length: 6
-	Username string `json:"username"`
 }
 
 // Validate validates this user
 func (m *User) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateEmail(formats); err != nil {
+		res = append(res, err)
+	}
 
 	if err := m.validateFirstName(formats); err != nil {
 		res = append(res, err)
@@ -49,13 +54,26 @@ func (m *User) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateUsername(formats); err != nil {
-		res = append(res, err)
-	}
-
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *User) validateEmail(formats strfmt.Registry) error {
+
+	if err := validate.Required("email", "body", m.Email); err != nil {
+		return err
+	}
+
+	if err := validate.MinLength("email", "body", string(m.Email), 6); err != nil {
+		return err
+	}
+
+	if err := validate.FormatOf("email", "body", "email", m.Email.String(), formats); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -79,19 +97,6 @@ func (m *User) validateLastName(formats strfmt.Registry) error {
 	}
 
 	if err := validate.MinLength("last_name", "body", string(m.LastName), 3); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *User) validateUsername(formats strfmt.Registry) error {
-
-	if err := validate.Required("username", "body", m.Username); err != nil {
-		return err
-	}
-
-	if err := validate.MinLength("username", "body", string(m.Username), 6); err != nil {
 		return err
 	}
 

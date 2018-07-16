@@ -20,9 +20,6 @@ type Error struct {
 	// status
 	// Required: true
 	Status *string `json:"status"`
-
-	// status code
-	StatusCode int64 `json:"status_code,omitempty"`
 }
 
 // Validate validates this error

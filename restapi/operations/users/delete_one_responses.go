@@ -37,12 +37,14 @@ func (o *DeleteOneNoContent) WriteResponse(rw http.ResponseWriter, producer runt
 	rw.WriteHeader(204)
 }
 
-/*DeleteOneDefault An error occured (DELETE /user/{id})
+// DeleteOneNotFoundCode is the HTTP code returned for type DeleteOneNotFound
+const DeleteOneNotFoundCode int = 404
 
-swagger:response deleteOneDefault
+/*DeleteOneNotFound User Not Found
+
+swagger:response deleteOneNotFound
 */
-type DeleteOneDefault struct {
-	_statusCode int
+type DeleteOneNotFound struct {
 
 	/*
 	  In: Body
@@ -50,43 +52,27 @@ type DeleteOneDefault struct {
 	Payload *models.Error `json:"body,omitempty"`
 }
 
-// NewDeleteOneDefault creates DeleteOneDefault with default headers values
-func NewDeleteOneDefault(code int) *DeleteOneDefault {
-	if code <= 0 {
-		code = 500
-	}
+// NewDeleteOneNotFound creates DeleteOneNotFound with default headers values
+func NewDeleteOneNotFound() *DeleteOneNotFound {
 
-	return &DeleteOneDefault{
-		_statusCode: code,
-	}
+	return &DeleteOneNotFound{}
 }
 
-// WithStatusCode adds the status to the delete one default response
-func (o *DeleteOneDefault) WithStatusCode(code int) *DeleteOneDefault {
-	o._statusCode = code
-	return o
-}
-
-// SetStatusCode sets the status to the delete one default response
-func (o *DeleteOneDefault) SetStatusCode(code int) {
-	o._statusCode = code
-}
-
-// WithPayload adds the payload to the delete one default response
-func (o *DeleteOneDefault) WithPayload(payload *models.Error) *DeleteOneDefault {
+// WithPayload adds the payload to the delete one not found response
+func (o *DeleteOneNotFound) WithPayload(payload *models.Error) *DeleteOneNotFound {
 	o.Payload = payload
 	return o
 }
 
-// SetPayload sets the payload to the delete one default response
-func (o *DeleteOneDefault) SetPayload(payload *models.Error) {
+// SetPayload sets the payload to the delete one not found response
+func (o *DeleteOneNotFound) SetPayload(payload *models.Error) {
 	o.Payload = payload
 }
 
 // WriteResponse to the client
-func (o *DeleteOneDefault) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+func (o *DeleteOneNotFound) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
-	rw.WriteHeader(o._statusCode)
+	rw.WriteHeader(404)
 	if o.Payload != nil {
 		payload := o.Payload
 		if err := producer.Produce(rw, payload); err != nil {

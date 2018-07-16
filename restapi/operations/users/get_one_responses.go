@@ -57,12 +57,14 @@ func (o *GetOneOK) WriteResponse(rw http.ResponseWriter, producer runtime.Produc
 	}
 }
 
-/*GetOneDefault An error occured(GET /user/{id})
+// GetOneNotFoundCode is the HTTP code returned for type GetOneNotFound
+const GetOneNotFoundCode int = 404
 
-swagger:response getOneDefault
+/*GetOneNotFound User Not Found
+
+swagger:response getOneNotFound
 */
-type GetOneDefault struct {
-	_statusCode int
+type GetOneNotFound struct {
 
 	/*
 	  In: Body
@@ -70,43 +72,27 @@ type GetOneDefault struct {
 	Payload *models.Error `json:"body,omitempty"`
 }
 
-// NewGetOneDefault creates GetOneDefault with default headers values
-func NewGetOneDefault(code int) *GetOneDefault {
-	if code <= 0 {
-		code = 500
-	}
+// NewGetOneNotFound creates GetOneNotFound with default headers values
+func NewGetOneNotFound() *GetOneNotFound {
 
-	return &GetOneDefault{
-		_statusCode: code,
-	}
+	return &GetOneNotFound{}
 }
 
-// WithStatusCode adds the status to the get one default response
-func (o *GetOneDefault) WithStatusCode(code int) *GetOneDefault {
-	o._statusCode = code
-	return o
-}
-
-// SetStatusCode sets the status to the get one default response
-func (o *GetOneDefault) SetStatusCode(code int) {
-	o._statusCode = code
-}
-
-// WithPayload adds the payload to the get one default response
-func (o *GetOneDefault) WithPayload(payload *models.Error) *GetOneDefault {
+// WithPayload adds the payload to the get one not found response
+func (o *GetOneNotFound) WithPayload(payload *models.Error) *GetOneNotFound {
 	o.Payload = payload
 	return o
 }
 
-// SetPayload sets the payload to the get one default response
-func (o *GetOneDefault) SetPayload(payload *models.Error) {
+// SetPayload sets the payload to the get one not found response
+func (o *GetOneNotFound) SetPayload(payload *models.Error) {
 	o.Payload = payload
 }
 
 // WriteResponse to the client
-func (o *GetOneDefault) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+func (o *GetOneNotFound) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
-	rw.WriteHeader(o._statusCode)
+	rw.WriteHeader(404)
 	if o.Payload != nil {
 		payload := o.Payload
 		if err := producer.Produce(rw, payload); err != nil {
